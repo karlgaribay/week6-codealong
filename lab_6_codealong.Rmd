@@ -1,0 +1,123 @@
+---
+title: "week_6"
+author: "Karla Garibay Garcia"
+date: "11/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(palmerpenguins)
+library(ggpubr)
+library(broom)
+```
+
+## Part 2: rank-based test (Mann Whitney U)
+
+```{r}
+set.seed(1414)
+gp_1 <- sample.int(20, size = 15, replace = TRUE)
+
+set.seed(1424)
+gp_2 <- sample.int(30, size = 14, replace = TRUE)
+
+```
+
+```{r}
+hist(gp_1)
+hist(gp_2)
+```
+
+```{r}
+my_mwu <- wilcox.test(gp_1, gp_2)
+my_mwu
+```
+P-value of 0.28 means that if the null hyp is true (these samples were drawn from pops w/same median) there is a prob of 28% that we could've found median values at least this different by chance. Not sufficient evidence to reject the null hyp of equal ranks or medians using a sig level of 0.05. 
+
+## Part 3: simple linear regression
+
+### A. Look at it
+
+```{r}
+ggplot(data = penguins, aes(x = flipper_length_mm, 
+                            y = body_mass_g)) +
+  geom_point()
+```
+
+Looks like a linear relationship between flipper length and body mass makes sense.
+
+### B. Model it
+
+```{r}
+penguin_lm <- lm(body_mass_g ~ flipper_length_mm, data = penguins)
+
+summary(penguin_lm)
+```
+### C. Access model outputs
+
+- The slope is `r round(penguin_lm$coefficient[2],2)` (g / mm)
+- The y-intercept is `r round(penguin_lm$coefficient[1],2)` (g)
+- The full equation is mass = `r round(penguin_lm$coefficient[2],2)`*(flipper length) + (`r round(penguin_lm$coefficient[1],2)`)
+
+```{r}
+penguin_lm_tidy <- broom::tidy(penguin_lm)
+
+penguin_int <- penguin_lm_tidy$estimate[1]
+penguin_int
+
+penguin_coef <- penguin_lm_tidy$estimate[2]
+penguin_coef
+
+penguin_lm_out <- broom::glance(penguin_lm)
+penguin_lm_out
+```
+Simple linear regression was used to explore the relationship b/w penguin flipper length (mm) and body mass (g) across all three penguin species, and including both male and female penguins. A significant regression model was found ($\beta$ = `r round(penguin_coef,3)`, F(`r penguin_lm_out$df`, `r penguin_lm_out$df.residual`) = `r round(penguin_lm_out$statistic,1)`, p < 0.001) with an R^2^ of `r round(penguin_lm_out$r.squared,3)`.
+
+### D. Explore model assumptions
+
+```{r}
+plot(penguin_lm)
+```
+
+
+### E. Visualize the model
+
+```{r}
+ggplot(data = penguins, aes(x = flipper_length_mm, 
+                            y = body_mass_g)) +
+  geom_point() + 
+  geom_smooth(method = "lm", 
+              color = "cyan", 
+              size = 0.5, 
+              fill = "gray10", 
+              alpha = 0.5) +
+  theme_classic() +
+  ggpubr::stat_regline_equation(label.x = 175, 
+                                label.y = 5500)
+```
+
+
+### F. Find Pearson's *r* for correlation: 
+```{r}
+penguins_cor <- cor.test(penguins$flipper_length_mm, penguins$body_mass_g)
+
+penguins_cor
+```
+Here, we see there's a strong correlation b/w penguin flipper length and body mass (*r* = `r round(penguins_cor$estimate,2)`, t(`r penguins_cor$parameter`) = `r round(penguins_cor$statistic,2)`, p < 0.001)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
